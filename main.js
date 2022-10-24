@@ -32,7 +32,7 @@ function colorRGBA(fragCoord) {
   let uv = { x: fragCoord.x / resolution.x, y: fragCoord.y / resolution.y };
 
   let center = { x: resolution.x / 2, y: resolution.y / 2 };
-  let radius = resolution.y;
+  let radius = resolution.y * 0.5;
   let color = [0.5 + 0.5 * Math.cos(time + uv.x), 0.5 + 0.5 * Math.cos(time + uv.y + 2), 0.5 + 0.5 * Math.cos(time + uv.x + 4)];
   let layer = circle(fragCoord, center, radius, color)
 
