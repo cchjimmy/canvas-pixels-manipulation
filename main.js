@@ -31,20 +31,15 @@ function colorRGBA(fragCoord) {
   let time = performance.now() / 1000;
   let uv = { x: fragCoord.x / resolution.x, y: fragCoord.y / resolution.y };
 
-  // let center = { x: resolution.x / 2, y: resolution.y / 2 };
-  // let radius = 0.25 * resolution.y;
+  let center = { x: resolution.x / 2, y: resolution.y / 2 };
+  let radius = 0.25 * resolution.y;
   let color = [0.5 + 0.5 * Math.cos(time + uv.x), 0.5 + 0.5 * Math.cos(time + uv.y + 2), 0.5 + 0.5 * Math.cos(time + uv.x + 4)];
-  // let layer = circle(fragCoord, center, radius, color)
-
-  // r = layer[0];
-  // g = layer[1];
-  // b = layer[2];
-  // a = layer[3];
+  let layer = circle(fragCoord, center, radius, color)
 
   r = color[0];
   g = color[1];
   b = color[2];
-  a = 1;
+  a = layer[3];
 
   return [lerp(0, 255, r) || 0, lerp(0, 255, g) || 0, lerp(0, 255, b) || 0, lerp(0, 255, a) || 0];
 }
