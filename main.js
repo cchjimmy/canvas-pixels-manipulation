@@ -1,55 +1,82 @@
 // https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Pixel_manipulation_with_canvas
 
-const canvas = document.querySelector('canvas');
-const ctx = canvas.getContext('2d');
-const resolution = { x: 400, y: 400 };
+!function init() {
+  const canvas = document.querySelector("canvas");
+  const ctx = canvas.getContext("2d");
+  const resolution = { x: 400, y: 400 };
 
-init();
-
-function init() {
   canvas.width = resolution.x;
   canvas.height = resolution.y;
-  loop()
-}
-
-function loop() {
-  let imageData = ctx.createImageData(canvas.width, canvas.height);
-  for (i = 0; i < imageData.data.length; i += 4) {
-    let fragCoord = { x: (i / 4) % canvas.width, y: canvas.height - (i / 4) / canvas.width };
-    let color = colorRGBA(fragCoord);
-    imageData.data[i] = color[0]; // red
-    imageData.data[i + 1] = color[1]; // green
-    imageData.data[i + 2] = color[2]; // blue
-    imageData.data[i + 3] = color[3]; // alpha
+  let imageData = ctx.createImageData(resolution.x, resolution.y);
+  let fragCoord = {
+    x: 0,
+    y: 0,
+  };
+  let uv = {
+    x: 0,
+    y: 0,
+  };
+  const throttledLog = throttle(
+    (...messages) => console.log(...messages),
+    1000,
+  );
+  let past = performance.now() / 1000;
+  setInterval(loop, 1000 / 30);
+  function loop() {
+    let time = performance.now() / 1000;
+    let dt = time - past;
+    throttledLog(1 / dt);
+    for (let i = 0; i < imageData.data.length; i += 4) {
+      fragCoord.x = (i / 4) % resolution.x;
+      fragCoord.y = resolution.y - (i / 4) / resolution.x;
+      uv.x = fragCoord.x / resolution.x;
+      uv.y = fragCoord.y / resolution.y;
+      colorRGBA(
+        fragCoord,
+        uv,
+        resolution,
+        time,
+        imageData.data,
+        i,
+        i + 1,
+        i + 2,
+        i + 3,
+      );
+    }
+    ctx.putImageData(imageData, 0, 0);
+    past = time;
+    // requestAnimationFrame(loop);
   }
-  ctx.putImageData(imageData, 0, 0);
-  requestAnimationFrame(loop);
+}();
+
+function colorRGBA(fragCoord, uv, resolution, time, data, ri, gi, bi, ai) {
+  !circle(
+      fragCoord,
+      resolution.x * 0.5,
+      resolution.y * 0.5,
+      resolution.y * 0.5,
+    )
+    ? rainbow(uv, time, data, ri, gi, bi, ai)
+    : (() => {
+      data[ri] = 0;
+      data[gi] = 0;
+      data[bi] = 0;
+      data[ai] = 255;
+    })();
 }
 
-function colorRGBA(fragCoord) {
-  let r, g, b, a;
-  let time = performance.now() / 1000;
-  let uv = { x: fragCoord.x / resolution.x, y: fragCoord.y / resolution.y };
-
-  let center = { x: resolution.x / 2, y: resolution.y / 2 };
-  let radius = resolution.y * 0.5;
-  let color = [0.5 + 0.5 * Math.cos(time + uv.x), 0.5 + 0.5 * Math.cos(time + uv.y + 2), 0.5 + 0.5 * Math.cos(time + uv.x + 4)];
-  let layer = circle(fragCoord, center, radius, color)
-
-  r = color[0];
-  g = color[1];
-  b = color[2];
-  a = layer[3];
-
-  return [lerp(0, 255, r) || 0, lerp(0, 255, g) || 0, lerp(0, 255, b) || 0, lerp(0, 255, a) || 0];
-}
-
-function circle(fragCoord, pos, rad, color) {
-  let d = length(pos.x - fragCoord.x, pos.y - fragCoord.y) - rad;
+function circle(fragCoord, x, y, rad) {
+  let d = length(x - fragCoord.x, y - fragCoord.y) - rad;
   let t = clamp(d, 0, 1);
-  return [...color, 1 - t];
+  return t;
 }
 
+function rainbow(uv, time, data, ri, gi, bi, ai) {
+  data[ri] = lerp(0, 255, 0.5 + 0.5 * Math.cos(time + uv.x));
+  data[gi] = lerp(0, 255, 0.5 + 0.5 * Math.cos(time + uv.y + 2));
+  data[bi] = lerp(0, 255, 0.5 + 0.5 * Math.cos(time + uv.x + 4));
+  data[ai] = 255;
+}
 function length(x, y) {
   return (x * x + y * y) ** 0.5;
 }
@@ -60,4 +87,16 @@ function clamp(min, preferred, max) {
 
 function lerp(min, max, percent) {
   return min + (max - min) * percent;
+}
+
+function throttle(fn, delay) {
+  let shouldWait = false;
+  return (...args) => {
+    if (shouldWait) return;
+    fn(...args);
+    shouldWait = true;
+    setTimeout(() => {
+      shouldWait = false;
+    }, delay);
+  };
 }
